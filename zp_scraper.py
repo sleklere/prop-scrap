@@ -1,6 +1,10 @@
 from bs4 import BeautifulSoup
 import cloudscraper
 
+###################################
+# ZONA PROP
+###################################
+
 # busqueda "oficina vicente lopez" se traduce a "https://www.zonaprop.com.ar/alquiler-q-oficina-vicente-lopez.html"
 # (no importa que categoría estaba seleccionada)
 # tipo: alquiler, venta, etc
@@ -12,22 +16,15 @@ import cloudscraper
 # (cuando se hace la busqueda en el navegador, despues la pagina lo parsea como el primer ejemplo)
 # 20 resultados máx por página
 
-
-references = {
-    "price_class": "sc-12dh9kl-3 iqNJlX",
-    "address_class": "sc-ge2uzh-0 eWOwnE postingAddress",
-}
-
-attributes = {
+zp_attributes = {
     "price": {"data-qa": "POSTING_CARD_PRICE"},
-    "address": {"class": references["address_class"]},
+    "address": {"class": "sc-ge2uzh-0 eWOwnE postingAddress"},
     "location": {"data-qa": "POSTING_CARD_LOCATION"},
     "expenses": {"data-qa": "expensas"},
     "features": {"data-qa": "POSTING_CARD_FEATURES"},
 }
 
 scraper = cloudscraper.create_scraper()
-
 page_to_scrape = scraper.get(
     "https://www.zonaprop.com.ar/alquiler-q-oficina-vicente-lopez.html"
 )
@@ -38,28 +35,33 @@ posts = soup.findAll("div", attrs={"data-posting-type": "PROPERTY"})
 
 num_results_h1 = soup.find("h1", attrs={"class": "sc-1oqs0ed-0 cvTPma"}, recursive=True)
 num_results = int(num_results_h1.text.split(" ")[0])
-num_pages = round(num_results / 10)
+num_pages = round(num_results / 20)  # number of results / number of posts per page
 
 ########
 # OUTPUT
 ########
 
+print("Results: " + str(num_results))
+
 counter = 0
 
+if posts != True:
+    print("No posts were found.")
+
 for p in posts:
-    price = p.find("div", attributes["price"])
-    address = p.find("div", attributes["address"])
-    location = p.find("h2", attributes["location"])
-    expenses = p.find("div", attributes["expenses"])
-    all_features = p.findAll("h3", attributes["features"])
+    price = p.find("div", zp_attributes["price"])
+    address = p.find("div", zp_attributes["address"])
+    location = p.find("h2", zp_attributes["location"])
+    expenses = p.find("div", zp_attributes["expenses"])
+    all_features = p.findAll("h3", zp_attributes["features"])
 
     counter += 1
 
     print(counter)
+    print("Precio: " + price.text)
     if address:
         print("Dirección: " + address.text)
     print("Ubicación: " + location.text)
-    print("Precio: " + price.text)
     if expenses:
         print(expenses.text)
     else:

@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import cloudscraper
+from util import output_posts_info, Scraper, bcolors
 
 ###################################
 # ARGEN PROP
@@ -15,56 +16,49 @@ ap_attributes = {
     "features": {"class": "card__main-features"},
 }
 
-scraper = cloudscraper.create_scraper()
-page_to_scrape = scraper.get(
-    "https://www.argenprop.com/oficinas/alquiler/vicente-lopez"
-)  # para las siguientes paginas se agrega "?pagina-{num}"
+ap_scraper = Scraper(
+    "https://www.argenprop.com/oficinas/alquiler/vicente-lopez",
+    "p",
+    {"class": "listing-header__results"},
+)
 
-soup = BeautifulSoup(page_to_scrape.text, "lxml")
 
-posts = soup.findAll("div", attrs={"class": "listing__item"})
+num_pages = ap_scraper.get_num_pages()
 
-num_results_h1 = soup.find("p", attrs={"class": "listing-header__results"})
-num_results = int(num_results_h1.text.split(" ")[0])
-num_pages = round(num_results / 20)
+post_counter = 0
 
-########
-# OUTPUT
-########
+for page in range(1, num_pages + 1):
+    print(
+        bcolors.OKBLUE
+        + "---------- "
+        + "PAGE "
+        + str(page)
+        + " ----------"
+        + bcolors.ENDC
+    )
+    posts = ap_scraper.scrap_posts(
+        f"https://www.argenprop.com/oficinas/alquiler/vicente-lopez?pagina-{page}",
+        {"class": "listing__item"},
+    )
+    for p in posts:
+        post_counter += 1
+        price = p.find("p", ap_attributes["price"]).text
+        address = p.find("p", ap_attributes["address"]).text.strip()
+        location = p.find("p", ap_attributes["location"]).text
+        expenses = p.find("span", ap_attributes["expenses"])
+        all_features = p.findAll("ul", ap_attributes["features"])
+        relative_link = p.find("a")
+        link = "https://www.argenprop.com" + relative_link.get("href")
 
-print("Results: " + str(num_results))
+        if expenses:
+            expenses = expenses.text.split(";")[1].split(" ")[1]
+            price = price.split("&")[0]
+        else:
+            expenses = False
+        price = price.strip()
 
-counter = 0
+        output_posts_info(posts, price, address, location, expenses, all_features, link)
 
-if posts != True:
-    print("No posts were found.")
-
-for p in posts:
-    price = p.find("p", ap_attributes["price"])
-    address = p.find("p", ap_attributes["address"])
-    location = p.find("p", ap_attributes["location"])
-    expenses = p.find("span", ap_attributes["expenses"])
-    all_features = p.findAll("ul", ap_attributes["features"])
-    link = p.find("a")
-
-    counter += 1
-
-    print(counter)
-    print("Precio: " + price.text.strip())
-    if address:
-        print("Dirección: " + address.text.strip())
-    print("Ubicación: " + location.text)
-    if expenses:
-        print(expenses.text)
-    else:
-        print("Post without expenses")
-
-    span_tags = all_features[0].findAll("span")
-    features_str = ""
-    for span in span_tags:
-        features_str += span.text.strip() + " - "
-    print("Otras características: " + features_str)
-    url = "https://www.argenprop.com" + link.get("href")
-    print(url)
-    print("------------------------------")
-    # print("\n")
+print("\n")
+print(bcolors.OKGREEN + "Results: " + str(post_counter) + bcolors.ENDC)
+print("\n")

@@ -13,20 +13,6 @@ import cloudscraper
 # 20 resultados máx por página
 
 
-class Browser:
-    def __init__(self):
-        self.scraper = cloudscraper.create_scraper()
-
-    def get(self, url):
-        return self.scraper.get(url)
-
-    def post(self, url, data):
-        return self.scraper.post(url, data)
-
-    def get_text(self, url):
-        return self.scraper.get(url).text
-
-
 references = {
     "price_class": "sc-12dh9kl-3 iqNJlX",
     "address_class": "sc-ge2uzh-0 eWOwnE postingAddress",
@@ -40,8 +26,9 @@ attributes = {
     "features": {"data-qa": "POSTING_CARD_FEATURES"},
 }
 
-browser = Browser()
-page_to_scrape = browser.get(
+scraper = cloudscraper.create_scraper()
+
+page_to_scrape = scraper.get(
     "https://www.zonaprop.com.ar/alquiler-q-oficina-vicente-lopez.html"
 )
 
@@ -52,6 +39,10 @@ posts = soup.findAll("div", attrs={"data-posting-type": "PROPERTY"})
 num_results_h1 = soup.find("h1", attrs={"class": "sc-1oqs0ed-0 cvTPma"}, recursive=True)
 num_results = int(num_results_h1.text.split(" ")[0])
 num_pages = round(num_results / 10)
+
+########
+# OUTPUT
+########
 
 counter = 0
 
@@ -82,8 +73,3 @@ for p in posts:
     link = "https://www.zonaprop.com.ar" + p.get("data-to-posting")
     print(link)
     print("\n")
-
-# OUTPUT
-
-print(num_pages)
-print(num_results_h1.text)
